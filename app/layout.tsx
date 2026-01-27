@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ProviderWrapper from "../providers"
+import { Card } from "@/components/ui/card";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,7 +30,19 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ProviderWrapper>
-              {children}    
+          <div className="flex justify-center items-center min-h-screen bg-gray-100">
+            <Card className="w-[380px] h-[600px] bg-white shadow-xl rounded-2xl flex flex-col overflow-hidden py-0 gap-0">
+              {/* Header */}
+              <div className="bg-emerald-600 text-white px-4 py-5 font-semibold text-center  rounded-tl-2xl  rounded-tr-2xl">
+                Chat App
+              </div>
+              <div className="overflow-y-auto  ">
+                 {children}
+              </div>
+             
+            </Card>
+          </div>
+
         </ProviderWrapper>
 
       </body>

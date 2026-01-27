@@ -1,6 +1,6 @@
 import { createContext, useState } from "react";
 
- export const UsernameContext = createContext<any>();
+ export const UsernameContext = createContext<any>(null);
 
 
  export default function UsernameProvider({children}:{children:React.ReactNode}){
