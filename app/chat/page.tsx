@@ -1,5 +1,4 @@
 "use client";
-import { GroupIdContext } from "@/context/groupIdContext";
 import { OnlineUsersContext } from "@/context/onlineUsers";
 import { UsernameContext } from "@/context/userContext";
 import { BellDot } from "lucide-react";
@@ -12,7 +11,10 @@ export default function Chat() {
   const [messages, setMessages] = useState<any[]>([]);
   const { username, setUsername } = useContext(UsernameContext);
   const { setOnlineUsers } = useContext(OnlineUsersContext);
-  const [notifications, setNotifications] = useState();
+  const [notifications, setNotifications] = useState("");
+  const [typingUser, setTypingUser] = useState("");
+  let typingTimeout = null;
+
 
   const [socket, setSocket] = useState<Socket | null>(null);
 
@@ -20,7 +22,9 @@ export default function Chat() {
   const searchParams = useSearchParams();
   const selectedUser = searchParams.get("to");
 
-      const groupId = searchParams.get("groupId")
+      const groupId = searchParams.get("groupId");
+
+      
   
 
   // get username
@@ -59,11 +63,30 @@ export default function Chat() {
   }, [socket]);
 
 
+  const handleTyping = (e) => {
+
+  setMessage(e.target.value);
+  if(!socket) return;
+  const room = [username, selectedUser].sort().join("__");
+
+  socket.emit("typing", { room, username });
+
+  if (typingTimeout) clearTimeout(typingTimeout);
+
+  typingTimeout = setTimeout(() => {
+    socket.emit("stop_typing", { room });
+  }, 1000);
+  
+};
+
 
   // notifications
   useEffect(() => {
     if (!socket || !username) return;
 
+
+    // chat between 2 person
+    if(selectedUser){
     const handler = (data: any) => {
       console.log("🔔 Notification:", data);
       setNotifications(`${data.title}\n${data.body}`);
@@ -71,11 +94,20 @@ export default function Chat() {
 
     socket.on("notification:new", handler);
     return () => socket.off("notification:new", handler);
+
+    // group chat
+  }else if(groupId){
+    const handler =(data: any) =>{
+      setNotifications(`${data.title}\n${data.body}`);
+    }
+
+    socket.on("notification_group:new", handler);
+    return ()=> socket.off("notification_group:new", handler)
+
+  }
+
+
   }, [socket]);
-
-
-
-
 
   // join room + messages
 //   useEffect(() => {
@@ -111,6 +143,25 @@ export default function Chat() {
 
 //     setMessage("");
 //   };
+
+
+useEffect(() => {
+  if (!socket) return;
+
+  socket.on("user_typing", (username) => {
+    setTypingUser(username);
+  });
+
+  socket.on("user_stop_typing", () => {
+    setTypingUser("");
+  });
+
+  return () => {
+    socket.off("user_typing");
+    socket.off("user_stop_typing");
+  };
+}, [socket]);
+
 
 useEffect(() => {
   if (!socket || !username) return;
@@ -215,9 +266,15 @@ const sendMessage = () => {
 
   {/* Input */}
   <div className="fixed bottom-16 w-[375px] bg-white border-t p-2 flex items-center gap-2">
+    {typingUser && (
+  <p className="text-xs text-gray-500 px-4 pb-2">
+    {typingUser} is typing...
+  </p>
+)}
+
     <input
       value={message}
-      onChange={(e) => setMessage(e.target.value)}
+      onChange={handleTyping}
       placeholder="Type a message..."
       className="flex-1 border rounded-full px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-400"
     />
